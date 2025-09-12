@@ -1,9 +1,17 @@
-export type Role = 'customer' | 'maintenance';
+export type Role = 'technician' | 'machine';
 
-export interface TokenPayload {
+export interface TechnicianTokenPayload {
   sub: string;
-  role: Role;
+  role: 'technician';
   username: string;
-  iat?: number;
-  exp?: number;
+  iat?: number; exp?: number;
 }
+
+export interface MachineTokenPayload {
+  sub: string;
+  role: 'machine';
+  machineId: string;
+  iat?: number; exp?: number;
+}
+
+export type TokenPayload = TechnicianTokenPayload | MachineTokenPayload;

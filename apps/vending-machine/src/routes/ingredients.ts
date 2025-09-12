@@ -1,22 +1,38 @@
 import { Router, type RequestHandler } from 'express';
-import { PrismaClient, type Ingredient as IngredientModel } from '@prisma/client';
-import { authenticate, requireMaintenance } from '../middleware/auth.js';
+
+import { authenticate, requireTechnician } from '../middleware/auth.js';
+import { BulkAdjustSchema, type BulkAdjustBody } from '../schemas/ingredients.js';
+import { listIngredients, adjustIngredientQuantities } from '../services/ingredients.js';
 import { envSchema, type Env } from '../types/env.js';
 
-const prisma: PrismaClient = new PrismaClient();
 const env: Env = envSchema.parse(process.env);
 
-export interface IngredientResponse {
-  id: number;
-  name: string;
-  stockUnits: number;
+export default function ingredientsRoutes(): Router {
+  const list: RequestHandler = async (_req, res, next) => {
+    try {
+      const data = await listIngredients();
+      res.status(200).json(data);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  const adjust: RequestHandler = async (req, res, next) => {
+    try {
+      const parsed = BulkAdjustSchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ message: 'Invalid body', issues: parsed.error.issues });
+        return;
+      }
+      const body: BulkAdjustBody = parsed.data;
+      const data = await adjustIngredientQuantities(body);
+      res.status(200).json(data);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  return Router()
+    .get('/ingredients', authenticate(env.JWT_SECRET), requireTechnician, list)
+    .patch('/ingredients', authenticate(env.JWT_SECRET), requireTechnician, adjust);
 }
-
-const listIngredients: RequestHandler = async (_req, res) => {
-  const list: IngredientModel[] = await prisma.ingredient.findMany({ orderBy: { name: 'asc' } });
-  const payload: IngredientResponse[] = list.map((i) => ({ id: i.id, name: i.name, stockUnits: i.stockUnits }));
-  res.json(payload);
-};
-
-export const ingredientsRouter: Router = Router()
-  .get('/ingredients', authenticate(env.JWT_SECRET), requireMaintenance, listIngredients);

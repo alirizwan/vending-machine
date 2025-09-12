@@ -1,7 +1,12 @@
 import { Router, type RequestHandler } from 'express';
+
+import { authenticate, requireMachine } from '../middleware/auth.js';
+import { CreateBeverageSchema, IdParamSchema } from '../schemas/beverages';
 import { listBeverages, createBeverage, getBeverageById } from '../services/beverages';
 import { prepareBeverage, BeverageNotFoundError, InsufficientStockError } from '../services/prepare.js';
-import { CreateBeverageSchema, IdParamSchema } from '../schemas/beverages';
+import { envSchema, type Env } from '../types/env.js';
+
+const env: Env = envSchema.parse(process.env);
 
 export default function beveragesRoutes(): Router {
 
@@ -59,8 +64,8 @@ export default function beveragesRoutes(): Router {
   };
 
   return Router()
-    .get('/beverages', list)
-    .get('/beverages/:id', getOne)
-    .post('/beverages', create)
-    .post('/beverages/:id/prepare', prepare);
+    .get('/beverages', authenticate(env.JWT_SECRET), requireMachine, list)
+    .get('/beverages/:id', authenticate(env.JWT_SECRET), requireMachine, getOne)
+    .post('/beverages', authenticate(env.JWT_SECRET), requireMachine, create)
+    .post('/beverages/:id/prepare', authenticate(env.JWT_SECRET), requireMachine, prepare);
 }

@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { envSchema, type Env } from './types/env.js';
 import beveragesRoutes from './routes/beverages.js';
-//import { ingredientsRouter } from './routes/ingredients.js';
+import ingredientsRoutes from './routes/ingredients.js';
 import { ErrorRequestHandler } from 'express';
 
 const parsed: Env = envSchema.parse(process.env);
@@ -20,13 +20,13 @@ app.get('/healthz', ((_, res) => {
 }) as RequestHandler);
 
 app.use(beveragesRoutes());
-//app.use(ingredientsRouter);
-/*
+app.use(ingredientsRoutes());
+
 app.use(((err, _req, res, _next) => {
   const status: number = typeof (err as any)?.status === 'number' ? (err as any).status : 500;
   const message: string = err instanceof Error ? err.message : 'Internal Server Error';
   res.status(status).json({ message });
-}) as ErrorRequestHandler);*/
+}) as ErrorRequestHandler);
 
 app.use(((req, res) => {
   res.status(404).json({ message: 'Not Found', path: req.path });

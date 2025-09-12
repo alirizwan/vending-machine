@@ -15,24 +15,40 @@ export interface BeverageResponse {
   price: number;
   recipe: RecipeLineResponse[];
   availability: boolean;
+  shortages: StockShortage[];
 }
 
-type BeverageWithRecipe = BeverageModel & {
+export type BeverageWithRecipe = BeverageModel & {
   recipe: Array<RecipeModel & { ingredient: IngredientModel }>;
 };
 
-function toResponse(b: BeverageWithRecipe): BeverageResponse {
-  const availability = computeAvailability(b);
+export interface StockShortage {
+  ingredientId: number;
+  ingredient: string;
+  required: number;
+  available: number;
+  unit: string;
+}
+
+export interface Availability {
+  canPrepare: boolean;
+  shortages: StockShortage[];
+}
+
+
+function toResponse(beverage: BeverageWithRecipe): BeverageResponse {
+  const availability = computeAvailability(beverage);
   return {
-    id: b.id,
-    name: b.name,
-    price: b.price,
-    recipe: b.recipe.map((r: RecipeModel) => ({
-      ingredient: r.ingredient.name,
-      quantity: r.quantity,
-      unit: r.unit,
+    id: beverage.id,
+    name: beverage.name,
+    price: beverage.price,
+    recipe: beverage.recipe.map((recipe: RecipeModel) => ({
+      ingredient: recipe.ingredient.name,
+      quantity: recipe.quantity,
+      unit: recipe.unit,
     })),
-    availability: availability.canPrepare
+    availability: availability.canPrepare,
+    shortages: availability.shortages
   };
 }
 
@@ -77,7 +93,7 @@ export const listBeverages = async (): Promise<BeverageResponse[]> => {
     orderBy: { name: 'asc' },
   });
 
-  const payload: BeverageResponse[] = (list as BeverageWithRecipe[]).map((b) => toResponse(b));
+  const payload: BeverageResponse[] = (list as BeverageWithRecipe[]).map((beverage) => toResponse(beverage));
 
   return payload;
 
@@ -90,9 +106,9 @@ export async function getBeverageById(id: number): Promise<BeverageResponse | nu
   });
   if (!row) return null;
 
-  const b = row as BeverageWithRecipe;
+  const beverage = row as BeverageWithRecipe;
 
-  return toResponse(row);
+  return toResponse(beverage);
 }
 
 export const createBeverage = async (body: CreateBeverageBody): Promise<BeverageResponse> => {

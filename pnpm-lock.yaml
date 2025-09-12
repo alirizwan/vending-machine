@@ -42,6 +42,62 @@ importers:
         specifier: ^2.0.5
         version: 2.1.9(@types/node@20.19.13)
 
+  apps/auth:
+    dependencies:
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
+      express:
+        specifier: ^4.19.2
+        version: 4.21.2
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.2
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.23
+      '@types/jsonwebtoken':
+        specifier: ^9.0.5
+        version: 9.0.10
+      '@types/node':
+        specifier: ^20.12.12
+        version: 20.19.13
+      tsx:
+        specifier: ^4.16.0
+        version: 4.20.5
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.2
+
+  apps/payment:
+    dependencies:
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
+      express:
+        specifier: ^4.19.2
+        version: 4.21.2
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
+    devDependencies:
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.23
+      '@types/node':
+        specifier: ^20.12.12
+        version: 20.19.13
+      tsx:
+        specifier: ^4.16.0
+        version: 4.20.5
+      typescript:
+        specifier: ^5.5.4
+        version: 5.9.2
+
   apps/vending-machine:
     dependencies:
       '@prisma/client':
