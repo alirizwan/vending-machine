@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Beverage {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  price     Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipe Recipe[]
+}
+
+model Ingredient {
+  id         Int    @id @default(autoincrement())
+  name       String @unique
+  stockUnits Int    @default(0)
+
+  usedIn Recipe[]
+}
+
+model Recipe {
+  beverageId   Int
+  ingredientId Int
+  quantity     Float // required amount of the ingredient for one beverage
+  unit         String // free-form unit (e.g., "ml", "gram", "piece", "shot")
+
+  beverage   Beverage   @relation(fields: [beverageId], references: [id])
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@id([beverageId, ingredientId])
+}
