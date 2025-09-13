@@ -3,14 +3,15 @@
   "private": true,
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "dev": "pnpm -r --parallel --filter @apps/auth --filter @apps/payment --filter @apps/vending-machine dev",
+    "dev": "pnpm -r --parallel --filter @apps/auth --filter @apps/payment --filter @apps/vending-machine --filter @apps/web dev",
     "build": "pnpm -r --filter @apps/* run build",
     "typecheck": "pnpm -r --filter @apps/* run typecheck",
     "lint": "eslint . --ext .ts",
     "db:generate": "pnpm -r --filter @apps/vending-machine exec prisma generate",
     "db:migrate": "pnpm -r --filter @apps/vending-machine exec prisma migrate dev --name init",
     "seed": "pnpm -r --filter @apps/vending-machine run seed",
-    "dev:all": "pnpm run db:generate && pnpm run db:migrate && pnpm run seed && pnpm run dev"
+    "dev:all": "pnpm run db:generate && pnpm run db:migrate && pnpm run seed && pnpm run dev",
+    "dev:web": "pnpm -F @apps/web dev"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
