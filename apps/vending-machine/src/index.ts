@@ -1,11 +1,13 @@
 import 'dotenv/config';
+import cors from 'cors';
 import express, { RequestHandler } from 'express';
+import { ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { envSchema, type Env } from './types/env.js';
+
 import beveragesRoutes from './routes/beverages.js';
 import ingredientsRoutes from './routes/ingredients.js';
-import { ErrorRequestHandler } from 'express';
+import { envSchema, type Env } from './types/env.js';
 
 const parsed: Env = envSchema.parse(process.env);
 
@@ -14,6 +16,15 @@ const app = express();
 app.use(helmet());
 app.use(express.json());
 app.use(morgan('dev'));
+
+const ORIGIN = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
+app.use(cors({
+  origin: ORIGIN,
+  methods: ['GET','POST','PATCH','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  maxAge: 600,
+}));
+app.options('*', cors());
 
 app.get('/healthz', ((_, res) => {
   res.json({ ok: true, machineId: parsed.MACHINE_ID });
@@ -33,6 +44,6 @@ app.use(((req, res) => {
 }) as RequestHandler);
 
 app.listen(parsed.PORT, () => {
-  // eslint-disable-next-line no-console
+   
   console.log(`vending-machine listening on :${parsed.PORT}`);
 });

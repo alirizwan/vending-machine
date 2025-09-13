@@ -1,6 +1,8 @@
 import 'dotenv/config';
-import express, { type ErrorRequestHandler, type RequestHandler } from 'express';
 import { randomUUID } from 'node:crypto';
+
+import express, { type ErrorRequestHandler, type RequestHandler } from 'express';
+
 import { CreatePaymentSchema, type CreatePaymentBody } from './schemas.js';
 import type { Payment } from './types.js';
 
@@ -74,6 +76,6 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  // eslint-disable-next-line no-console
+   
   console.log(`mock payment listening on :${PORT}`);
 });

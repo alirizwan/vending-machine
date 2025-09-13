@@ -5,8 +5,8 @@ import { jfetch, authBase } from '@/lib/api';
 import { auth } from '@/lib/auth';
 
 export default function Page() {
-  const [username, setUser] = useState('tech');
-  const [password, setPass] = useState('tech123');
+  const [username, setUser] = useState('');
+  const [password, setPass] = useState('');
   const [msg, setMsg] = useState<string>();
 
   async function login() {
@@ -16,9 +16,11 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({ username, password }),
       });
+      console.log('login', data);
       auth.technician = data.token;
       setMsg('Technician logged in');
     } catch (e) {
+      console.log(e)
       setMsg((e as Error).message);
     }
   }

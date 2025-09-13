@@ -1,16 +1,27 @@
 import 'dotenv/config';
+import cors from 'cors';
 import express, { type ErrorRequestHandler, type RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
+
 import { LoginSchema, type LoginBody, MachineLoginSchema, type MachineLoginBody } from './schemas.js';
 import type { TechnicianTokenPayload, MachineTokenPayload, Technician, Machine } from './types.js';
 
 const app = express();
 app.use(express.json());
 
+const ORIGIN = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
+app.use(cors({
+  origin: ORIGIN,
+  methods: ['GET','POST','PATCH','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  maxAge: 600,
+}));
+app.options('*', cors());
+
 const PORT = Number(process.env.PORT ?? 7001);
 const JWT_SECRET = process.env.JWT_SECRET ?? '';
 if (JWT_SECRET.length < 16) {
-  // eslint-disable-next-line no-console
+   
   console.error('JWT_SECRET must be set and at least 16 chars for the mock auth service.');
   process.exit(1);
 }
@@ -82,6 +93,6 @@ const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  // eslint-disable-next-line no-console
+   
   console.log(`mock auth listening on :${PORT}`);
 });
