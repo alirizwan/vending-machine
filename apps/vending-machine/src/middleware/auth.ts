@@ -1,7 +1,7 @@
 import type { RequestHandler } from 'express';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
 
-import type { TokenPayload } from '../types/auth.js';
+import type { TokenPayload } from '../types/auth';
 
 function isTokenPayload(payload: string | JwtPayload): payload is TokenPayload {
   return typeof payload === 'object' && payload !== null && 'role' in payload && 'sub' in payload;

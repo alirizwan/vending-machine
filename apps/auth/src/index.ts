@@ -3,8 +3,8 @@ import cors from 'cors';
 import express, { type ErrorRequestHandler, type RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 
-import { LoginSchema, type LoginBody, MachineLoginSchema, type MachineLoginBody } from './schemas.js';
-import type { TechnicianTokenPayload, MachineTokenPayload, Technician, Machine } from './types.js';
+import { LoginSchema, type LoginBody, MachineLoginSchema, type MachineLoginBody } from './schemas';
+import type { TechnicianTokenPayload, MachineTokenPayload, Technician, Machine } from './types';
 
 const app = express();
 app.use(express.json());

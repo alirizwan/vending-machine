@@ -1,69 +1,8 @@
-import { PrismaClient, type Beverage as BeverageModel, type Ingredient as IngredientModel, type Recipe as RecipeModel } from '@prisma/client';
-//import { CreateBeverageSchema, type CreateBeverageBody } from '../schemas/beverages';
+import { PrismaClient, type Recipe as RecipeModel } from '@prisma/client';
+
+import { BeverageResponse, BeverageWithRecipe, StockShortage, Availability } from '../types/beverage';
 
 const prisma: PrismaClient = new PrismaClient();
-
-export interface RecipeLineResponse {
-  ingredient: string;
-  quantity: number;
-  unit: string;
-}
-
-export interface BeverageResponse {
-  id: number;
-  name: string;
-  price: number;
-  recipe: RecipeLineResponse[];
-  availability: boolean;
-  shortages: StockShortage[];
-}
-
-export type BeverageWithRecipe = BeverageModel & {
-  recipe: Array<RecipeModel & { ingredient: IngredientModel }>;
-};
-
-export interface StockShortage {
-  ingredientId: number;
-  ingredient: string;
-  required: number;
-  available: number;
-  unit: string;
-}
-
-export interface Availability {
-  canPrepare: boolean;
-  shortages: StockShortage[];
-}
-
-
-function toResponse(beverage: BeverageWithRecipe): BeverageResponse {
-  const availability = computeAvailability(beverage);
-  return {
-    id: beverage.id,
-    name: beverage.name,
-    price: beverage.price,
-    recipe: beverage.recipe.map((recipe: RecipeModel) => ({
-      ingredient: recipe.ingredient.name,
-      quantity: recipe.quantity,
-      unit: recipe.unit,
-    })),
-    availability: availability.canPrepare,
-    shortages: availability.shortages
-  };
-}
-
-export interface StockShortage {
-  ingredientId: number;
-  ingredient: string;
-  required: number;
-  available: number;
-  unit: string;
-}
-
-export interface Availability {
-  canPrepare: boolean;
-  shortages: StockShortage[];
-}
 
 export function computeAvailability(b: BeverageWithRecipe): Availability {
   const shortages: StockShortage[] = [];
@@ -84,6 +23,22 @@ export function computeAvailability(b: BeverageWithRecipe): Availability {
   }
 
   return { canPrepare: shortages.length === 0, shortages };
+}
+
+function toResponse(beverage: BeverageWithRecipe): BeverageResponse {
+  const availability = computeAvailability(beverage);
+  return {
+    id: beverage.id,
+    name: beverage.name,
+    price: beverage.price,
+    recipe: beverage.recipe.map((recipe: RecipeModel) => ({
+      ingredient: recipe.ingredient.name,
+      quantity: recipe.quantity,
+      unit: recipe.unit,
+    })),
+    availability: availability.canPrepare,
+    shortages: availability.shortages
+  };
 }
 
 export const listBeverages = async (): Promise<BeverageResponse[]> => {
@@ -110,25 +65,3 @@ export async function getBeverageById(id: number): Promise<BeverageResponse | nu
 
   return toResponse(beverage);
 }
-
-export const createBeverage = async (body: CreateBeverageBody): Promise<BeverageResponse> => {
-
-  const connected = await Promise.all(
-    body.ingredients.map(async (n) => {
-      const ing = await prisma.ingredient.upsert({
-        where: { name: n },
-        update: {},
-        create: { name: n, stockUnits: 100 },
-      });
-      return { ingredientId: ing.id };
-    }),
-  );
-
-  const created = await prisma.beverage.create({
-    data: { name: body.name, price: body.price, ingredients: { create: connected } },
-    include: { ingredients: { include: { ingredient: true } } },
-  });
-
-  return created;
-
-};

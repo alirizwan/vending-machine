@@ -1,17 +1,17 @@
 import { Router, type RequestHandler } from 'express';
 
-import { authenticate, requireMachine } from '../middleware/auth.js';
-import { CreateBeverageSchema, IdParamSchema } from '../schemas/beverages';
-import { listBeverages, createBeverage, getBeverageById } from '../services/beverages';
-import { prepareBeverage, BeverageNotFoundError, InsufficientStockError } from '../services/prepare.js';
-import { envSchema, type Env } from '../types/env.js';
+import { authenticate, requireMachine } from '../middleware/auth';
+import { IdParamSchema, PrepareBeverageSchema } from '../schemas/beverages';
+import { envSchema, type Env } from '../schemas/env';
+import { listBeverages, getBeverageById } from '../services/beverages';
+import { prepareBeverage } from '../services/prepare';
+import { BeverageNotFoundError, InsufficientStockError } from '../utils/errors';
 
 const env: Env = envSchema.parse(process.env);
 
 export default function beveragesRoutes(): Router {
 
   const list: RequestHandler = async (_req, res) => {
-    console.log('Listing beverages');
     const data = await listBeverages();
     res.status(200).json(data);
   };
@@ -34,7 +34,7 @@ export default function beveragesRoutes(): Router {
     }
   };
 
-  const create: RequestHandler = async (_req, res) => {
+  /*const create: RequestHandler = async (_req, res) => {
 
     const parsed = CreateBeverageSchema.safeParse(_req.body);
     if (!parsed.success) {
@@ -44,13 +44,18 @@ export default function beveragesRoutes(): Router {
 
     const data = await createBeverage(parsed.data);
     res.status(201).json(data);
-  };
+  };*/
 
   const prepare: RequestHandler = async (req, res, next) => {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id) || id <= 0) return void res.status(400).json({ message: 'Invalid beverage id' });
+    const parsed = PrepareBeverageSchema.safeParse(req.body);
+    
+    if (!parsed.success) {
+      res.status(400).json({ message: 'Invalid id', issues: parsed.error.issues });
+      return;
+    }
+
     try {
-      const result = await prepareBeverage(id);
+      const result = await prepareBeverage(id, parsed.data);
       res.status(200).json(result);
     } catch (err) {
       if (err instanceof BeverageNotFoundError) {
@@ -66,6 +71,6 @@ export default function beveragesRoutes(): Router {
   return Router()
     .get('/beverages', authenticate(env.JWT_SECRET), requireMachine, list)
     .get('/beverages/:id', authenticate(env.JWT_SECRET), requireMachine, getOne)
-    .post('/beverages', authenticate(env.JWT_SECRET), requireMachine, create)
+    //.post('/beverages', authenticate(env.JWT_SECRET), requireMachine, create)
     .post('/beverages/:id/prepare', authenticate(env.JWT_SECRET), requireMachine, prepare);
 }

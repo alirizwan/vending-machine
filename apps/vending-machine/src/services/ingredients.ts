@@ -1,13 +1,9 @@
 import { PrismaClient, type Ingredient as IngredientModel } from '@prisma/client';
-import type { BulkAdjustBody, AdjustLine } from '../schemas/ingredients.js';
+
+import type { BulkAdjustBody, AdjustLine } from '../schemas/ingredients';
+import { IngredientResponse } from '../types/beverage';
 
 const prisma = new PrismaClient();
-
-export interface IngredientResponse {
-  id: number;
-  name: string;
-  stockUnits: number;
-}
 
 /** List all ingredients (for maintenance) */
 export async function listIngredients(): Promise<IngredientResponse[]> {

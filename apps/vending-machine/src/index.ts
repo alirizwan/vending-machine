@@ -5,9 +5,9 @@ import { ErrorRequestHandler } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
-import beveragesRoutes from './routes/beverages.js';
-import ingredientsRoutes from './routes/ingredients.js';
-import { envSchema, type Env } from './types/env.js';
+import beveragesRoutes from './routes/beverages';
+import ingredientsRoutes from './routes/ingredients';
+import { envSchema, type Env } from './schemas/env';
 
 const parsed: Env = envSchema.parse(process.env);
 

@@ -28,7 +28,7 @@ async function main(): Promise<void> {
     update: {},
     create: {
       name: 'Espresso',
-      price: 2.0,
+      price: 200,
       recipe: {
         create: [
           { ingredientId: espresso.id, quantity: 1, unit: 'shot' },
@@ -43,7 +43,7 @@ async function main(): Promise<void> {
     update: {},
     create: {
       name: 'Cappuccino',
-      price: 3.0,
+      price: 450,
       recipe: {
         create: [
           { ingredientId: espresso.id, quantity: 1, unit: 'shot' },
@@ -57,7 +57,7 @@ async function main(): Promise<void> {
 
 main()
   .then(async () => {
-    console.log('✅ Seed complete');
+    console.log('Seed complete');
   })
   .catch(async (e) => {
     console.error(e);

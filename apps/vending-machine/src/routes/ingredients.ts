@@ -1,9 +1,9 @@
 import { Router, type RequestHandler } from 'express';
 
-import { authenticate, requireTechnician } from '../middleware/auth.js';
-import { BulkAdjustSchema, type BulkAdjustBody } from '../schemas/ingredients.js';
-import { listIngredients, adjustIngredientQuantities } from '../services/ingredients.js';
-import { envSchema, type Env } from '../types/env.js';
+import { authenticate, requireTechnician } from '../middleware/auth';
+import { envSchema, type Env } from '../schemas/env';
+import { BulkAdjustSchema, type BulkAdjustBody } from '../schemas/ingredients';
+import { listIngredients, adjustIngredientQuantities } from '../services/ingredients';
 
 const env: Env = envSchema.parse(process.env);
 
