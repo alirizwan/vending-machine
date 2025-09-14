@@ -17,7 +17,7 @@ export interface Beverage {
   name: string;
   price: number;
   recipe: RecipeLine[];
-  available: boolean;
+  availability: boolean;
   shortages: StockShortage[];
 }
 
