@@ -4,4 +4,5 @@ dist
 *.log
 **/data/
 **/prisma/*.db
-.next/cache
+**/.next/cache/
+/apps/web/.next

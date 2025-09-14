@@ -1,26 +1,39 @@
 'use client';
 import { useEffect, useState } from 'react';
 
+import PrepareDialog, { type PrepareFormValues } from '@/components/prepare-dialog.client';
 import { useMachineApi } from '@/lib/api-hooks';
 import type { Beverage } from '@/lib/types';
 
 export default function BeveragesPage() {
   const api = useMachineApi();
+
   const [items, setItems] = useState<Beverage[]>([]);
   const [error, setError] = useState<string>();
-  const [sugar, setSugar] = useState<number>(0);   // grams
-  const [shots, setShots] = useState<number>(1);   // espresso shots
   const [busy, setBusy] = useState<number | null>(null);
 
+  const [openId, setOpenId] = useState<number | null>(null);
+
+  const load = async () => {
+    try {
+      const beverages = await api.get<Beverage[]>('/beverages');
+      setItems(beverages);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
-    api.get<Beverage[]>('/beverages').then(setItems).catch(console.error);
+    load();
   }, []);
 
-  async function prepare(beverage: Beverage) {
+  const findBeverageById = (id: number) => items.find(b => b.id === id) || null;
+
+  async function onConfirm(beverage: Beverage, values: PrepareFormValues) {
     setBusy(beverage.id);
     setError(undefined);
     try {
-      await api.post(`/beverages/${beverage.id}/prepare`);
+      await api.post(`/beverages/${beverage.id}/prepare`, values);
 
       alert(`Prepared: ${beverage.name}`);
     } catch (e) {
@@ -33,10 +46,6 @@ export default function BeveragesPage() {
   return (
     <main>
       <h2>Beverages</h2>
-      <div style={{ marginBottom: 12 }}>
-        <label>Shots: <input type="number" value={shots} min={1} max={4} onChange={e=>setShots(Number(e.target.value))} /></label>{' '}
-        <label>Sugar (g): <input type="number" value={sugar} min={0} max={20} onChange={e=>setSugar(Number(e.target.value))} /></label>
-      </div>
       {error && <p style={{ color:'crimson' }}>{error}</p>}
       <ul style={{ display:'grid', gap:12, listStyle:'none', padding:0 }}>
         {items.map(beverage => (
@@ -53,12 +62,24 @@ export default function BeveragesPage() {
                 Unavailable. Shortages: {beverage.shortages.map(s => `${s.ingredient} +${s.required - s.available}${s.unit}`).join(', ')}
               </div>
             )}
-            <button disabled={!beverage.availability || busy === beverage.id} onClick={() => prepare(beverage)} style={{ marginTop:8 }}>
+            <button disabled={!beverage.availability || busy === beverage.id} onClick={() => setOpenId(beverage.id)} style={{ marginTop:8 }}>
               {busy === beverage.id ? 'Preparing...' : 'Prepare'}
             </button>
           </li>
         ))}
       </ul>
+
+      <PrepareDialog
+        open={openId !== null}
+        onClose={(refresh: boolean) => {
+          if (refresh) load();
+          setOpenId(null);
+        }}
+        beverage={findBeverageById(openId as number) as Beverage}
+        defaultShots={1}
+        defaultSugar={0}
+      />
+
     </main>
   );
 }
