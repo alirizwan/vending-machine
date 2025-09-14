@@ -104,7 +104,7 @@ export default function PrepareDialog({
         {error && <p style={{ color: 'crimson' }}>{error}</p>}
 
         {
-          phase === 'idle' && (
+          ['idle', 'payment_failed'].includes(phase) && (
             <form
               ref={formRef}
               onSubmit={(e) => {

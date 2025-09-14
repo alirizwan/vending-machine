@@ -1,32 +1,12 @@
 import { PrismaClient, type Recipe as RecipeModel } from '@prisma/client';
 
-import { BeverageResponse, BeverageWithRecipe, StockShortage, Availability } from '../types/beverage';
+import { BeverageResponse, BeverageWithRecipe } from '../types/beverage';
+import { computeAvailability } from '../utils/helpers';
 
 const prisma: PrismaClient = new PrismaClient();
 
-export function computeAvailability(b: BeverageWithRecipe): Availability {
-  const shortages: StockShortage[] = [];
-
-  for (const line of b.recipe) {
-    const available = line.ingredient.stockUnits;
-    const required = line.quantity;
-
-    if (available < required) {
-      shortages.push({
-        ingredientId: line.ingredientId,
-        ingredient: line.ingredient.name,
-        required,
-        available,
-        unit: line.unit,
-      });
-    }
-  }
-
-  return { canPrepare: shortages.length === 0, shortages };
-}
-
 function toResponse(beverage: BeverageWithRecipe): BeverageResponse {
-  const availability = computeAvailability(beverage);
+  const availability = computeAvailability(beverage.recipe);
   return {
     id: beverage.id,
     name: beverage.name,

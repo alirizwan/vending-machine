@@ -15,9 +15,13 @@ export interface BeverageResponse {
   shortages: StockShortage[];
 }
 
+export type RecipeLine = RecipeModel & { ingredient: IngredientModel };
+
 export type BeverageWithRecipe = BeverageModel & {
-  recipe: Array<RecipeModel & { ingredient: IngredientModel }>;
+  recipe: Array<RecipeLine>;
 };
+
+export type Ingredient = IngredientModel;
 
 export interface StockShortage {
   ingredientId: number;

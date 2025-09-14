@@ -47,6 +47,10 @@ export default function beveragesRoutes(): Router {
   };*/
 
   const prepare: RequestHandler = async (req, res, next) => {
+    const id = Number(req.params.id);
+
+    if (!Number.isFinite(id) || id <= 0) return void res.status(400).json({ message: 'Invalid beverage id' });
+
     const parsed = PrepareBeverageSchema.safeParse(req.body);
     
     if (!parsed.success) {

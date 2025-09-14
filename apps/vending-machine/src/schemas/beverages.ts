@@ -17,9 +17,8 @@ export const IdParamSchema = z.object({
 });
 
 export const PrepareBeverageSchema = z.object({
-  id: z.coerce.number().int().positive(),
   sugar: z.number().min(0).max(5).optional(),
-  coffee: z.number().min(0).max(3).optional(),
+  shots: z.number().min(0).max(3).optional(),
   paymentId: z.string().min(1),
 });
 

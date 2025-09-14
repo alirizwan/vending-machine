@@ -1,8 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import { Ingredient, PrismaClient } from '@prisma/client';
 
-import { StockShortage, BeverageWithRecipe } from '../types/beverage';
+import { BeverageWithRecipe } from '../types/beverage';
 import { BeverageNotFoundError, InsufficientStockError } from '../utils/errors';
-import { applyOptionsToRecipe, fiftyFifty } from '../utils/helpers';
+import { applyOptionsToRecipe, eightyTwenty, computeAvailability } from '../utils/helpers';
 import { Mutex } from '../utils/mutex';
 
 const prisma = new PrismaClient();
@@ -14,11 +14,7 @@ export interface PrepareResult {
   consumed: Array<{ ingredientId: number; ingredient: string; quantity: number; unit: string }>;
 }
 
-export async function prepareBeverage(beverageId: number, options: { sugar?: number; coffee?: number; paymentId: string }): Promise<PrepareResult> {
-
-  if (fiftyFifty()) {
-    throw new Error('Payment processing failed.');
-  } else { /* Payment succeeded */ }
+export async function prepareBeverage(beverageId: number, options: { sugar?: number; shots?: number; paymentId: string }): Promise<PrepareResult> {
 
   // Serialize end-to-end so only one prepare runs at a time in this process.
   const release = await prepareMutex.acquire();
@@ -32,25 +28,25 @@ export async function prepareBeverage(beverageId: number, options: { sugar?: num
     if (!beverage) throw new BeverageNotFoundError(beverageId);
     const b = beverage as BeverageWithRecipe;
 
-    const recipe = applyOptionsToRecipe(b.recipe, options);
+    const sugar: Ingredient | null = await prisma.ingredient.findFirst({
+      where: { name: 'sugar' },
+    });
 
-    // Check stock availability first (read-only)
-    const shortages: StockShortage[] = [];
-    for (const line of b.recipe) {
-      const available = line.ingredient.stockUnits;
-      if (available < line.quantity) {
-        shortages.push({
-          ingredientId: line.ingredientId,
-          ingredient: line.ingredient.name,
-          required: line.quantity,
-          available,
-          unit: line.unit,
-        });
-      }
+    if (!sugar && options.sugar && options.sugar > 0) {
+       throw new Error('Sugar ingredient not found in inventory.');
     }
+
+    const recipe = applyOptionsToRecipe(b.recipe, sugar, { sugar: options.sugar ?? 0, espresso: options.shots ?? 0 });
+
+    const { shortages } = computeAvailability(recipe);
+
     if (shortages.length) {
       throw new InsufficientStockError(beverageId, shortages);
     }
+
+    if (!eightyTwenty()) {
+      throw new Error('Payment processing failed.');
+    } else { /* Payment succeeded */ }
 
     // Atomic decrement (transaction for consistency)
     await prisma.$transaction(async (tx) => {
