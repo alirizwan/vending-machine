@@ -1,4 +1,4 @@
-import { RecipeLine, Ingredient, StockShortage, Availability, BeverageWithRecipe } from '../types/beverage';
+import { RecipeLine, Ingredient, StockShortage, Availability } from '../types/beverage';
 
 interface PrepareOptions {
   sugar: number;

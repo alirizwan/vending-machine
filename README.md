@@ -1,323 +1,217 @@
-# Vending Machine Monorepo
+# ☕ Vending Machine Monorepo
 
-A demonstration of a microservice-style backend for a vending machine system, built with **TypeScript**, **Express**, and **pnpm workspaces**.  
-It contains three services:
+This project is a **microservice-style vending machine system** built with:
 
-- **vending-machine** → Manages beverages, ingredients, recipes, and preparation logic.  
-- **auth** → Issues JWTs for technicians and vending machines (mock, no DB).  
-- **payment** → Mock payment processor to demonstrate microservice communication.  
+- **Node.js / TypeScript**  
+- **Express** (backend services)  
+- **Prisma ORM** with SQLite (local DB, migrations supported)  
+- **Next.js** (frontend web UI)  
+- **pnpm** (monorepo package manager)  
+- **Docker + Terraform** (for deployment, optional)
 
-This project is designed for learning, prototyping, and showcasing **microservices, TypeScript, Prisma, and JWT auth**.
-
----
-
-## Architecture
-
-```
-apps/
-  vending-machine/   # Vending machine API (Prisma + SQLite)
-  auth/              # Authentication mock (JWT)
-  payment/           # Payment mock (in-memory)
-infra/
-  docker/            # Optional docker-compose for running services
-```
-
-- **Monorepo** managed with `pnpm`  
-- **Services** run independently, communicate over HTTP  
-- **JWT auth** ensures:  
-  - **Machines** are identified via API keys  
-  - **Technicians** authenticate with username/password  
-- **Prisma + SQLite** used for vending-machine persistence  
-- **Mocks**: Auth and Payment services are mocked for simplicity  
+It demonstrates:
+- Service separation (Auth, Payment, Vending Machine)
+- Infrastructure-as-code mindset
+- Authentication/authorization (machine API keys, technician login)
+- A UI that simulates a real vending machine experience.
 
 ---
 
-## Getting Started
+## 📦 Prerequisites
 
-### Prerequisites
-- Node.js ≥ 20  
-- pnpm ≥ 9  
-- SQLite (bundled, no extra setup)  
+- **Node.js v18+**
+- **pnpm** (install instructions below)
+- **SQLite** (comes bundled, no separate install needed)
 
-### Install
+---
+
+## ⚙️ Installing pnpm
+
+If you don’t have pnpm installed:
+
+```bash
+npm install -g pnpm
+```
+
+Verify installation:
+
+```bash
+pnpm -v
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1. Install dependencies
+
+At the monorepo root:
+
 ```bash
 pnpm install
 ```
 
-### Prepare Vending Machine DB
+### 2. Run database migrations
+
+The **vending-machine service** uses Prisma with SQLite.
+
 ```bash
-pnpm -F @apps/vending-machine prisma generate
-pnpm -F @apps/vending-machine prisma migrate dev --name init
-pnpm -F @apps/vending-machine seed
+pnpm -F @apps/vending-machine prisma migrate dev
 ```
 
-### Run All Services Together
+This will:
+- Create the SQLite database at `apps/vending-machine/prisma/dev.db`
+- Run the migrations
+- Generate the Prisma client
+
+### 3. Seed the database
+
 ```bash
-pnpm run dev:all
+pnpm -F @apps/vending-machine prisma db seed
 ```
 
-This starts:
-- **Auth** → `http://localhost:7001`  
-- **Payment** → `http://localhost:7002`  
-- **Vending Machine** → `http://localhost:7000`  
+Seeds initial beverages, recipes, and ingredient stock.
 
 ---
 
-## Authentication Service (`apps/auth`)
+## ▶️ Running the services
 
-A mock service with **hardcoded technicians and machines**.
+You can run all three backend services + the frontend with one command:
 
-### Endpoints
-
-#### Health
-```http
-GET /healthz
-```
-
-#### Technician login
-```http
-POST /auth/technician/login
-Content-Type: application/json
-
-{
-  "username": "tech",
-  "password": "tech123"
-}
-```
-Response:
-```json
-{ "token": "<jwt>" }
-```
-
-#### Machine login
-```http
-POST /auth/machine/login
-Content-Type: application/json
-
-{
-  "machineId": "vm-001",
-  "apiKey": "vm-001-DEV-KEY"
-}
-```
-Response:
-```json
-{ "token": "<jwt>" }
-```
-
-### Example JWT payloads
-
-Technician:
-```json
-{
-  "sub": "1",
-  "role": "technician",
-  "username": "tech",
-  "iat": 123456,
-  "exp": 123789
-}
-```
-
-Machine:
-```json
-{
-  "sub": "1",
-  "role": "machine",
-  "machineId": "vm-001",
-  "iat": 123456,
-  "exp": 123789
-}
-```
-
----
-
-## Payment Service (`apps/payment`)
-
-A mocked payment processor.
-
-### Endpoints
-
-#### Health
-```http
-GET /healthz
-```
-
-#### Create payment
-```http
-POST /payments
-Content-Type: application/json
-
-{
-  "amountCents": 350,
-  "currency": "EUR",
-  "method": "mock",
-  "machineId": "vm-001"
-}
-```
-
-Response (201):
-```json
-{
-  "id": "uuid",
-  "amountCents": 350,
-  "currency": "EUR",
-  "method": "mock",
-  "status": "succeeded",
-  "machineId": "vm-001",
-  "createdAt": "2025-09-12T10:00:00.000Z"
-}
-```
-
-#### Idempotency
-Use the `Idempotency-Key` header:
 ```bash
-curl -X POST http://localhost:7002/payments   -H 'Content-Type: application/json'   -H 'Idempotency-Key: abc123'   -d '{"amountCents": 350}'
+pnpm dev
 ```
 
-#### Simulate decline
-```http
-POST /payments?simulate=decline
-```
-Response: status `402` with `"status": "declined"`
+This launches:
 
----
+- **Auth Service** → http://localhost:7001  
+- **Payment Service** → http://localhost:7002  
+- **Vending Machine Service** → http://localhost:7000  
+- **Web App (Next.js)** → http://localhost:3000  
 
-## Vending Machine Service (`apps/vending-machine`)
+Each service also has its own `pnpm dev` if you want to run them individually:
 
-Handles beverages, recipes, and preparation.
-
-### Public Endpoints
-
-#### List beverages
-```http
-GET /beverages
-```
-Response:
-```json
-[
-  {
-    "id": 1,
-    "name": "Espresso",
-    "price": 200,
-    "recipe": [{ "ingredient": "espresso", "quantity": 1, "unit": "shot" }],
-    "available": true,
-    "shortages": []
-  },
-  {
-    "id": 2,
-    "name": "Cappuccino",
-    "price": 300,
-    "recipe": [
-      { "ingredient": "espresso", "quantity": 1, "unit": "shot" },
-      { "ingredient": "milk", "quantity": 150, "unit": "ml" }
-    ],
-    "available": false,
-    "shortages": [
-      { "ingredientId": 2, "ingredient": "milk", "required": 150, "available": 40, "unit": "ml" }
-    ]
-  }
-]
-```
-
-#### Get beverage by id
-```http
-GET /beverages/1
-```
-
-### Machine Endpoint
-
-#### Prepare beverage
-```http
-POST /beverages/:id/prepare
-Authorization: Bearer <machine-token>
-```
-Response:
-```json
-{
-  "beverageId": 1,
-  "beverageName": "Espresso",
-  "consumed": [{ "ingredientId": 1, "ingredient": "espresso", "quantity": 1, "unit": "shot" }]
-}
-```
-
-### Technician Endpoints (private)
-
-Require `Authorization: Bearer <technician-token>`.
-
-#### List ingredients
-```http
-GET /ingredients
-Authorization: Bearer <technician-token>
-```
-
-#### Adjust ingredients
-```http
-PATCH /ingredients
-Authorization: Bearer <technician-token>
-Content-Type: application/json
-
-{
-  "changes": [
-    { "id": 1, "op": "increment", "amount": 100 },
-    { "id": 2, "op": "set", "amount": 500 }
-  ]
-}
-```
-
-Response:
-```json
-[
-  { "id": 1, "name": "espresso", "stockUnits": 1100 },
-  { "id": 2, "name": "milk", "stockUnits": 500 }
-]
+```bash
+pnpm -F @apps/auth dev
+pnpm -F @apps/payment dev
+pnpm -F @apps/vending-machine dev
+pnpm -F @apps/web dev
 ```
 
 ---
 
-## Flow Examples
+## 🔑 Authentication
 
-### 1) Customer buys a drink
-1. Vending machine frontend calls **Payment Service** → `/payments`
-2. If payment succeeded:
-   - Vending machine backend calls **Vending Machine Service** → `/beverages/:id/prepare` with machine JWT
-   - Machine dispenses drink
+There are two types of authentication:
 
-### 2) Technician restocks machine
-1. Technician logs in to **Auth Service** → gets token
-2. Calls **Vending Machine Service** → `PATCH /ingredients` with token
-3. Stock updated, drinks become available again
+### 1. Technician login (username/password)
+
+Hardcoded in the **Auth Service** for testing:
+
+| Username | Password   | Role        |
+|----------|------------|-------------|
+| `tech`   | `tech123`  | Technician  |
+| `admin`  | `admin123` | Technician  |
+
+### 2. Machine authorization (API key)
+
+Machines identify with **machineId + apiKey**. Hardcoded in **Auth Service**:
+
+| Machine ID | API Key         |
+|------------|-----------------|
+| `vm-001`   | `vm-001-DEV-KEY`|
+| `vm-002`   | `vm-002-DEV-KEY`|
+
+---
+
+## 🖥️ Web UI Flow
+
+Start at: http://localhost:3000
+
+### Step 1: Technician login
+- Go to `/` (root page).
+- Enter credentials (e.g., `tech` / `tech123`).
+- After login you’re recognized as a **Technician**.
+
+### Step 2: Authorize a machine
+- Go to `/machine`.
+- Provide:
+  - `machineId` (e.g., `vm-001`)
+  - `apiKey` (e.g., `vm-001-DEV-KEY`)
+- Once authorized, this simulates a **specific vending machine instance**.
+
+### Step 3: Order a beverage
+- Go to `/beverages`.
+- Browse list of beverages with recipe & stock availability.
+- Click **Prepare** on an available beverage.
+- A dialog asks:
+  - **Espresso shots** (≥ base recipe requirement)
+  - **Sugar grams** (can be 0, adds sugar if not part of recipe)
+  - Optionally **simulate declined payment**
+- After confirming:
+  1. The UI shows **“Please pay on the terminal next to the machine”** (simulated 2s delay).
+  2. Calls the **Payment Service**.
+  3. Simulates brewing time (3s).
+  4. Calls the **Vending Machine Service** to decrement stock.
+  5. Shows success or shortage error.
+
+### Step 4: Maintenance
+- Go to `/maintenance`.
+- As a logged-in Technician, you can:
+  - View current ingredient stock.
+  - Increment/decrement/set stock quantities.
+  - Apply changes to refill or adjust machine.
 
 ---
 
-## Testing the system
+## 🔍 Example API calls
 
-1. **Get a technician token**
-   ```bash
-   curl -X POST http://localhost:7001/auth/technician/login      -H 'Content-Type: application/json'      -d '{"username":"tech","password":"tech123"}'
-   ```
+### Vending Machine Service
+- `GET /beverages` → list all beverages with recipe & availability.
+- `POST /beverages/:id/prepare` → simulate preparing beverage (requires machine token).
+- `GET /ingredients` → list ingredients (requires technician token).
+- `PATCH /ingredients` → adjust stock (requires technician token).
 
-2. **Get a machine token**
-   ```bash
-   curl -X POST http://localhost:7001/auth/machine/login      -H 'Content-Type: application/json'      -d '{"machineId":"vm-001","apiKey":"vm-001-DEV-KEY"}'
-   ```
+### Auth Service
+- `POST /auth/technician/login` → { username, password } → returns JWT
+- `POST /auth/machine/login` → { machineId, apiKey } → returns JWT
 
-3. **List beverages (public)**
-   ```bash
-   curl http://localhost:7000/beverages
-   ```
-
-4. **Prepare beverage (machine)**
-   ```bash
-   curl -X POST http://localhost:7000/beverages/1/prepare      -H "Authorization: Bearer <machine-token>"
-   ```
-
-5. **List ingredients (technician)**
-   ```bash
-   curl http://localhost:7000/ingredients      -H "Authorization: Bearer <technician-token>"
-   ```
-
-6. **Adjust ingredients (technician)**
-   ```bash
-   curl -X PATCH http://localhost:7000/ingredients      -H "Authorization: Bearer <technician-token>"      -H "Content-Type: application/json"      -d '{"changes":[{"id":2,"op":"increment","amount":200}]}'
-   ```
+### Payment Service
+- `POST /payments` → { amountCents, method, machineId } → returns confirmation or decline.
 
 ---
+
+## 🛠️ Tech Decisions
+
+- **Monorepo with pnpm workspaces** → Easy dependency sharing across services.
+- **Express** → Simple and well-known web framework.
+- **Prisma + SQLite** → Developer-friendly ORM with migrations & local DB.
+- **Next.js** → Full-featured React framework for client app.
+- **Auth mocking** → Hardcoded users and machines for demo purposes.
+- **Payment mocking** → Fake service to demonstrate microservice integration.
+- **CORS configured** for dev between `localhost:3000` and backend services.
+
+---
+
+## 🧪 Testing
+
+- Run services with `pnpm dev`.
+- Open http://localhost:3000 in your browser.
+- Follow the UI flow (login → authorize machine → order beverage → maintenance).
+- Check backend logs for request traces.
+
+---
+
+## 📂 Project Structure
+
+```
+.
+├── apps
+│   ├── auth             # Authentication service
+│   ├── payment          # Payment mock service
+│   ├── vending-machine  # Vending Machine service (Prisma, DB)
+│   └── web              # Next.js frontend
+├── package.json         # Root scripts (pnpm dev, lint, etc.)
+├── pnpm-workspace.yaml  # Monorepo config
+└── README.md            # This file
+```

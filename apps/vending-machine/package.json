@@ -31,10 +31,12 @@
     "@types/jsonwebtoken": "^9.0.5",
     "@types/morgan": "^1.9.9",
     "@types/node": "^20.12.12",
+    "supertest": "^7.0.0",
+    "@types/supertest": "^2.0.16",
+    "vitest": "^2.0.5",
     "prisma": "^5.18.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
-    "typescript": "^5.5.4",
-    "vitest": "^2.0.5"
+    "typescript": "^5.5.4"
   }
 }
