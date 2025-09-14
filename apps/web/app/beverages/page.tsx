@@ -1,20 +1,25 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-import PrepareDialog, { type PrepareFormValues } from '@/components/prepare-dialog.client';
+import PrepareDialog from '@/components/prepare-dialog.client';
 import { useMachineApi } from '@/lib/api-hooks';
+import { useMachineAuth } from '@/lib/auth-state-hooks';
 import type { Beverage } from '@/lib/types';
 
 export default function BeveragesPage() {
   const api = useMachineApi();
+  const machine = useMachineAuth();
 
   const [items, setItems] = useState<Beverage[]>([]);
-  const [error, setError] = useState<string>();
-  const [busy, setBusy] = useState<number | null>(null);
-
   const [openId, setOpenId] = useState<number | null>(null);
+  const [error, setError] = useState<string>();
 
   const load = async () => {
+    setError(undefined);
+    if (!machine.loggedIn) {
+      setError('Machine is not authorized.');
+      return;
+    }
     try {
       const beverages = await api.get<Beverage[]>('/beverages');
       setItems(beverages);
@@ -28,20 +33,6 @@ export default function BeveragesPage() {
   }, []);
 
   const findBeverageById = (id: number) => items.find(b => b.id === id) || null;
-
-  async function onConfirm(beverage: Beverage, values: PrepareFormValues) {
-    setBusy(beverage.id);
-    setError(undefined);
-    try {
-      await api.post(`/beverages/${beverage.id}/prepare`, values);
-
-      alert(`Prepared: ${beverage.name}`);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(null);
-    }
-  }
 
   return (
     <main>
@@ -62,23 +53,23 @@ export default function BeveragesPage() {
                 Unavailable. Shortages: {beverage.shortages.map(s => `${s.ingredient} +${s.required - s.available}${s.unit}`).join(', ')}
               </div>
             )}
-            <button disabled={!beverage.availability || busy === beverage.id} onClick={() => setOpenId(beverage.id)} style={{ marginTop:8 }}>
-              {busy === beverage.id ? 'Preparing...' : 'Prepare'}
-            </button>
+            <button disabled={!beverage.availability } onClick={() => setOpenId(beverage.id)} style={{ marginTop:8 }}>Prepare</button>
           </li>
         ))}
       </ul>
-
-      <PrepareDialog
-        open={openId !== null}
-        onClose={(refresh: boolean) => {
-          if (refresh) load();
-          setOpenId(null);
-        }}
-        beverage={findBeverageById(openId as number) as Beverage}
-        defaultShots={1}
-        defaultSugar={0}
-      />
+      
+      {
+        findBeverageById(openId as number) && (
+          <PrepareDialog
+            open={openId !== null}
+            onClose={(refresh: boolean) => {
+              if (refresh) load();
+              setOpenId(null);
+            }}
+            beverage={findBeverageById(openId as number) as Beverage}
+          />
+        )
+      }
 
     </main>
   );

@@ -1,9 +1,8 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 
 import { useMachineApi } from '@/lib/api-hooks';
 import type { Beverage } from '@/lib/types';
-import { on } from 'events';
 
 export type PrepareFormValues = {
   shots: number;
@@ -11,7 +10,7 @@ export type PrepareFormValues = {
   paymentId: string;
 };
 
-type Phase = 'idle' | 'awaiting_payment' | 'payment_failed' | 'preparing' | 'done';
+type Phase = 'idle' | 'awaiting_payment' | 'failed' | 'preparing' | 'done';
 
 type Props = {
   open: boolean;
@@ -26,8 +25,6 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export default function PrepareDialog({
   open,
   onClose,
-  defaultShots = 1,
-  defaultSugar = 0,
   beverage
 }: Props) {
 
@@ -57,10 +54,24 @@ export default function PrepareDialog({
       setStatusMsg('');
       onClose(true);
     } catch (e) {
-      setPhase('payment_failed');
-      setStatusMsg('Payment failed. Please try again.');
+      setPhase('failed');
+      setStatusMsg('Process failed. Please try again.');
       setError((e as Error).message);
     }
+  }
+
+  function close() {
+    setPhase('idle');
+    setStatusMsg('');
+    setError('');
+    onClose(false);
+  }
+
+  const customizableOptions = beverage.recipe.filter(r => ['espresso', 'sugar'].includes(r.ingredient.toLowerCase()));
+  const optionsMap = Object.fromEntries(customizableOptions.map(o => [o.ingredient.toLowerCase(), o]));
+
+  if (!customizableOptions.length) {
+    prepare({ shots: 0, sugar: 0, paymentId: 'dummy-payment-id' });
   }
 
   const formRef = useRef<HTMLFormElement>(null);
@@ -79,11 +90,11 @@ export default function PrepareDialog({
               padding: '10px 12px',
               borderRadius: 8,
               background:
-                phase === 'payment_failed' ? '#ffe6e6' :
+                phase === 'failed' ? '#ffe6e6' :
                 phase === 'done' ? '#e7f8ec' :
                 '#eef3ff',
               color:
-                phase === 'payment_failed' ? '#b41414' :
+                phase === 'failed' ? '#b41414' :
                 phase === 'done' ? '#116635' :
                 '#1d3a8a',
               display: 'flex',
@@ -94,7 +105,7 @@ export default function PrepareDialog({
             <span>
               {phase === 'awaiting_payment' && '💳'}
               {phase === 'preparing' && '🛠️'}
-              {phase === 'payment_failed' && '❌'}
+              {phase === 'failed' && '❌'}
               {phase === 'done' && '✅'}
             </span>
             <span>{statusMsg}</span>
@@ -104,7 +115,7 @@ export default function PrepareDialog({
         {error && <p style={{ color: 'crimson' }}>{error}</p>}
 
         {
-          ['idle', 'payment_failed'].includes(phase) && (
+          ['idle', 'failed'].includes(phase) && customizableOptions.length > 0 && (
             <form
               ref={formRef}
               onSubmit={(e) => {
@@ -118,14 +129,14 @@ export default function PrepareDialog({
             >
               <label>
                 Espresso shots:
-                <input name="shots" type="number" min={1} max={4} defaultValue={defaultShots} />
+                <input name="shots" type="number" min={1} max={5} defaultValue={optionsMap['espresso']?.quantity} />
               </label>
               <label>
                 Sugar (grams):
-                <input name="sugar" type="number" min={0} max={20} defaultValue={defaultSugar} />
+                <input name="sugar" type="number" min={0} max={5} defaultValue={optionsMap['sugar']?.quantity || 0} />
               </label>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => onClose(false)}>Cancel</button>
+                <button type="button" onClick={close}>Cancel</button>
                 <button type="submit">Pay & Prepare</button>
               </div>
             </form>
